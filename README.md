@@ -21,6 +21,10 @@ On Linux Gnome Terminal does not support this kind of keyboard remapping, but [K
 How do I configure my terminal (<insert name of your terminal here>) to remap <shift>+<enter>, <ctrl>+<enter>, and <alt>+<enter> to emit the section symbol (§, unicode: U+00A7, html: &sect;).
 ```
 
+## NOTE: Patching is brittle!
+
+This patch is likely to break randomly, since it is patching minified code and if cli.js is changed, the patch will likely break. The patch works as of 2025-7-06 on Claude 1.0.43. Raise a bug if a version breaks and I'll look at updating, but no promises on timing- life is busy!
+
 ## Installation
 
 ### Prerequisites
