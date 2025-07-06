@@ -13,7 +13,7 @@ This patch modifies [Claude Code CLI](https://github.com/anthropics/claude-code)
 
 We do this by:
 * Making sure \\+<enter> still submits, but so does the section symbol (§, unicode: U+00A7, html: &sect;)
-* We can use terminal remapping to allow <shift>+<enter>, <ctrl>+<enter>, and <alt>+<enter> to also submit.
+* We can use terminal remapping to allow **Shift+Enter**, **Ctrl+Enter**, and **Alt+Enter** to also submit.
 
 On Linux Gnome Terminal does not support this kind of keyboard remapping, but [Kitty](https://github.com/kovidgoyal/kitty) does. Example configuration for kitty is included, but to configure your terminal of choice ask your favourite AI:
 
