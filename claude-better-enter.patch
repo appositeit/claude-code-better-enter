@@ -1,0 +1,161 @@
+--- ../claude-code-patching/cli.js.fresh	2025-07-06 20:02:38.904200044 +1000
++++ /home/jem/.npm-global/lib/node_modules/@anthropic-ai/claude-code/cli.js	2025-07-06 23:01:06.606080837 +1000
+@@ -9777,8 +9777,6 @@
+         W = D.interactionId !== void 0 ? A[D.interactionId] : void 0;
+       if (W === void 0) return;
+         if (F.name === "return") {
+-          console.log("[PATCH] Return key detected in ZkB - F:", JSON.stringify(F));
+-          console.log("[PATCH] Key object Y being created");
+         }
+         
+       let {
+@@ -290208,7 +290206,23 @@
+               meta: F.meta || F.name === "escape" || F.option,
+             },
+             W = F.ctrl ? F.name : F.sequence;
+-          if(W===void 0)return;console.log("[PATCH] Key event - name:",F.name,"shift:",F.shift,"meta:",F.meta,"ctrl:",F.ctrl,"sequence:",F.sequence);if(F.name && zLA.includes(F.name)) W = "";
++          // Log more details about the sequence
++          if(F.sequence) {
++          }
++          if(W) {
++          }
++          // Check for our custom Alt+Enter Unicode character (U+E000)
++          if((F.sequence && (F.sequence === "\ue000" || F.sequence.charCodeAt(0) === 0xe000)) || 
++             (W && (W === "\ue000" || W.charCodeAt(0) === 0xe000))) {
++            // Set meta and return flags to trigger submission
++            Y.meta = true;
++            Y.return = true;
++            A_.batchedUpdates(() => {
++              A("", Y);
++            });
++            return;
++          }
++          if(F.name && zLA.includes(F.name)) W = "";
+           if (W.startsWith("\x1B")) W = W.slice(1);
+           if (
+             W.length === 1 &&
+@@ -336986,34 +337000,35 @@
+       ["d", () => L.deleteWordAfter()],
+     ]);
+   function b1(T1) {
+-    if (C && L.offset > 0 && L.text[L.offset - 1] === "\\")
+-      return (
+-        ux2(),
+-        L.backspace().insert(`
+-`)
+-      );
+-    if (T1.meta)
+-      return L.insert(`
+-`);
+-    // FIXED: Shift detection now works properly
+-    console.log("[PATCH] b1 - return:",T1.return,"shift:",T1.shift,"meta:",T1.meta,"ctrl:",T1.ctrl);
+     
+-    // Handle Enter key based on ctrl/meta state (Shift+Enter not detectable in terminals)
++    // Check for semicolon+Enter to submit (our Alt+Enter mapping)
++    if (T1.return && L.offset > 0 && L.text[L.offset - 1] === ";") {
++      L.backspace(); // Remove the semicolon
++      Q?.(A); // Submit
++      return;
++    }
++    
++    // MODIFIED: Backslash+Enter now SUBMITS instead of inserting newline
++    if (T1.return && L.offset > 0 && L.text[L.offset - 1] === "\\") {
++      L.backspace(); // Remove the backslash
++      Q?.(A); // Submit
++      return;
++    }
++    
++    // Ctrl+Enter or Cmd+Enter submits
++    if (T1.return && (T1.ctrl || T1.meta)) {
++      Q?.(A);
++      return;
++    }
++    
++    // Default: Enter always inserts newline
+     if (T1.return) {
+-      if (T1.ctrl || T1.meta) {
+-        console.log("[PATCH] Ctrl/Cmd+Enter pressed - submitting");
+-        Q?.(A);
+-        return;
+-      } else {
+-        console.log("[PATCH] Enter pressed - inserting newline");
+-        return L.insert(`
++      return L.insert(`
+ `);
+-      }
+     }
+     
+     // Handle Kitty's Shift+Enter (sends quote character)
+     if (!T1.return && T1.shift && L.text.length > 0 && L.text[L.text.length - 1] === '"') {
+-      console.log("[PATCH] Kitty Shift+Enter detected - removing quote and submitting");
+       L.backspace(); // Remove the quote
+       Q?.(A); // Submit
+       return;
+@@ -337070,10 +337085,6 @@
+         return () => b1(T1);
+       case T1.tab:
+         return () => L;
+-      case T1.sequence === "[13~":
+-        // Kitty Shift+Enter sequence
+-        console.log("[PATCH] Kitty Shift+Enter detected - submitting");
+-        return () => { Q?.(A); return L; };
+       case T1.upArrow:
+         return g1;
+       case T1.downArrow:
+@@ -337086,7 +337097,6 @@
+         return function (I1) {
+           // Check for Alt+Enter (empty input with shift in key object)
+           if (I1 === "" && T1.shift && !T1.return) {
+-            console.log("[PATCH] Alt+Enter detected - submitting");
+             Q?.(A);
+             return L;
+           }
+@@ -337122,13 +337132,22 @@
+     }
+   }
+   function DA(T1, I1) {
+-    console.log("[PATCH] DA (onInput) - T1:", T1, "I1:", JSON.stringify(I1));
++    if (T1) {
++      
++      // Direct submission when § is typed
++      if (T1 === "§") {
++        Q?.(A); // Submit directly
++        return; // Don't process the character further
++      }
++    }
+     let P1 = R ? R(T1, I1) : T1;
+     if (P1 === "" && T1 !== "") return;
+     let R1 = YA(I1)(P1);
+     if (R1) {
+       if (!L.equals(R1)) {
+-        if ((O(R1.offset), L.text !== R1.text)) B(R1.text);
++        if ((O(R1.offset), L.text !== R1.text)) {
++          B(R1.text);
++        }
+       }
+     }
+   }
+@@ -337202,7 +337221,6 @@
+         if ((B(C, J), C.length > 10)) Z(!1);
+       },
+       pasteState: D,
+-      isPasting: (console.log("[PATCH] cx2 isPasting:", G), G), 
+     }
+   );
+ }
+@@ -337227,7 +337245,14 @@
+     { wrappedOnInput: Z, isPasting: F } = cx2({
+       onPaste: D.onPaste,
+       onInput: (V, K) => {
+-        console.log("[PATCH] wrappedOnInput - V:", V, "K:", JSON.stringify(K));
++        // Check for Alt+Enter sequence
++        if (V && V.includes("~~SUBMIT~~")) {
++          // Don't add the submit text, instead trigger Enter with meta
++          K.meta = true;
++          K.return = true;
++          I("", K); // Send empty string with meta+return flags to trigger submission
++          return;
++        }
+         // if (F && K.return) return; // PATCH: Removed to allow Enter
+         I(V, K);
+       },

@@ -1,0 +1,21 @@
+# Backup files
+*.backup-*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Test files
+test/
+*.test.js
